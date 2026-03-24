@@ -22,6 +22,7 @@ export type Database = {
           fee_jastip: number
           id: string
           notes: string | null
+          photo_url: string | null
           status: Database["public"]["Enums"]["package_status"]
           tracking_number: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           fee_jastip?: number
           id?: string
           notes?: string | null
+          photo_url?: string | null
           status?: Database["public"]["Enums"]["package_status"]
           tracking_number: string
         }
@@ -42,6 +44,7 @@ export type Database = {
           fee_jastip?: number
           id?: string
           notes?: string | null
+          photo_url?: string | null
           status?: Database["public"]["Enums"]["package_status"]
           tracking_number?: string
         }
