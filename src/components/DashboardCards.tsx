@@ -11,7 +11,7 @@ export function DashboardCards({ packages }: DashboardCardsProps) {
   const totalPending = packages.filter(p => p.status === 'Pending').length;
   const totalPickedUp = packages.filter(p => p.status === 'Picked Up').length;
   const profitToday = packages
-    .filter(p => new Date(p.created_at).toDateString() === today)
+    .filter(p => p.status === 'Done' && new Date(p.created_at).toDateString() === today)
     .reduce((sum, p) => sum + Number(p.fee_jastip), 0);
 
   const cards = [
