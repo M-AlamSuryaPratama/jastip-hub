@@ -10,6 +10,7 @@ export interface Package {
   fee_jastip: number;
   status: PackageStatus;
   notes: string | null;
+  photo_url: string | null;
 }
 
 export const EXPEDITION_TYPES: ExpeditionType[] = ['J&T', 'JNE', 'SPX', 'Sicepat', 'Makanan', 'Lainnya'];
