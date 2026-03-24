@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { Plus, ScanLine, Camera, X } from 'lucide-react';
+import { Plus, ScanLine, Camera, X, ImagePlus } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +10,7 @@ import { useCreatePackage } from '@/hooks/usePackages';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { EXPEDITION_TYPES, type ExpeditionType } from '@/lib/types';
 import { compressImage } from '@/lib/imageUtils';
+import { toast } from 'sonner';
 
 export function PackageForm() {
   const [customerName, setCustomerName] = useState('');
@@ -19,6 +21,7 @@ export function PackageForm() {
   const [showScanner, setShowScanner] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const barcodeImageRef = useRef<HTMLInputElement>(null);
 
   const createPackage = useCreatePackage();
 
@@ -27,6 +30,23 @@ export function PackageForm() {
     if (!file) return;
     const compressed = await compressImage(file);
     setPhotoPreview(compressed);
+  };
+
+  const handleBarcodeFromImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const scanner = new Html5Qrcode('barcode-image-scan', /* verbose= */ false);
+      const result = await scanner.scanFile(file, true);
+      setTrackingNumber(result);
+      toast.success('Barcode berhasil terdeteksi!');
+      scanner.clear();
+    } catch {
+      toast.error('Barcode tidak terdeteksi dari gambar ini.');
+    }
+    // Reset the input
+    if (barcodeImageRef.current) barcodeImageRef.current.value = '';
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -96,18 +116,39 @@ export function PackageForm() {
                   placeholder="Scan atau ketik nomor resi"
                   value={trackingNumber}
                   onChange={e => setTrackingNumber(e.target.value)}
-                  className="pr-11 h-11"
+                  className="pr-[5.5rem] h-11"
                   required
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-11 w-11 text-primary hover:text-primary"
-                  onClick={() => setShowScanner(true)}
-                >
-                  <ScanLine className="h-5 w-5" />
-                </Button>
+                {/* Hidden input for barcode image scanning */}
+                <input
+                  ref={barcodeImageRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleBarcodeFromImage}
+                />
+                <div className="absolute right-0 top-0 flex h-11">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 text-muted-foreground hover:text-primary"
+                    title="Scan dari gambar"
+                    onClick={() => barcodeImageRef.current?.click()}
+                  >
+                    <ImagePlus className="h-4.5 w-4.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 text-primary hover:text-primary"
+                    title="Scan kamera"
+                    onClick={() => setShowScanner(true)}
+                  >
+                    <ScanLine className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
             </div>
             <div className="space-y-1.5">
@@ -176,6 +217,9 @@ export function PackageForm() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Hidden element for html5-qrcode image scanning */}
+      <div id="barcode-image-scan" className="hidden" />
 
       {showScanner && (
         <BarcodeScanner
