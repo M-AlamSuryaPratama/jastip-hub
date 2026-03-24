@@ -26,6 +26,7 @@ export function useCreatePackage() {
       tracking_number: string;
       fee_jastip: number;
       notes?: string;
+      photo_url?: string;
     }) => {
       const { data, error } = await supabase.from('packages').insert(pkg).select().single();
       if (error) throw error;

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, ScanLine } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Plus, ScanLine, Camera, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCreatePackage } from '@/hooks/usePackages';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { EXPEDITION_TYPES, type ExpeditionType } from '@/lib/types';
+import { compressImage } from '@/lib/imageUtils';
 
 export function PackageForm() {
   const [customerName, setCustomerName] = useState('');
@@ -16,8 +17,17 @@ export function PackageForm() {
   const [feeJastip, setFeeJastip] = useState('');
   const [notes, setNotes] = useState('');
   const [showScanner, setShowScanner] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const createPackage = useCreatePackage();
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const compressed = await compressImage(file);
+    setPhotoPreview(compressed);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +40,7 @@ export function PackageForm() {
         tracking_number: trackingNumber,
         fee_jastip: Number(feeJastip),
         notes: notes || undefined,
+        photo_url: photoPreview || undefined,
       },
       {
         onSuccess: () => {
@@ -38,6 +49,8 @@ export function PackageForm() {
           setTrackingNumber('');
           setFeeJastip('');
           setNotes('');
+          setPhotoPreview(null);
+          if (fileInputRef.current) fileInputRef.current.value = '';
         },
       }
     );
@@ -120,6 +133,42 @@ export function PackageForm() {
                 className="h-11"
               />
             </div>
+
+            {/* Photo Upload */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Foto Paket <span className="text-muted-foreground">(opsional)</span></Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
+              {photoPreview ? (
+                <div className="relative inline-block">
+                  <img src={photoPreview} alt="Preview" className="h-24 w-24 rounded-lg object-cover border" />
+                  <button
+                    type="button"
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                    onClick={() => { setPhotoPreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 w-full text-xs gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Camera className="h-4 w-4" />
+                  Ambil / Pilih Foto
+                </Button>
+              )}
+            </div>
+
             <Button type="submit" className="w-full h-11 text-sm font-semibold" disabled={createPackage.isPending}>
               <Plus className="h-4 w-4" />
               {createPackage.isPending ? 'Menambahkan...' : 'Tambah Paket'}
