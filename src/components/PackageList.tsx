@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Trash2, Search, PackageCheck, CheckCircle2 } from 'lucide-react';
+import { Trash2, Search, PackageCheck, CheckCircle2, PackageOpen } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUpdatePackageStatus, useDeletePackage } from '@/hooks/usePackages';
+import { PhotoViewer } from '@/components/PhotoViewer';
 import type { Package, PackageStatus, ExpeditionType } from '@/lib/types';
 import { EXPEDITION_COLORS, STATUS_COLORS, PACKAGE_STATUSES, EXPEDITION_TYPES } from '@/lib/types';
 
@@ -17,6 +18,7 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
   const [statusFilter, setStatusFilter] = useState<PackageStatus | 'All'>('All');
   const [expeditionFilter, setExpeditionFilter] = useState<ExpeditionType | 'All'>('All');
   const [search, setSearch] = useState('');
+  const [viewPhoto, setViewPhoto] = useState<string | null>(null);
   const updateStatus = useUpdatePackageStatus();
   const deletePackage = useDeletePackage();
 
@@ -109,7 +111,19 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
           <Card key={pkg.id} className="shadow-card hover:shadow-card-hover transition-shadow border animate-slide-up">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
-                <div className={`w-1.5 self-stretch rounded-full ${EXPEDITION_COLORS[pkg.expedition_type]}`} />
+                {/* Photo thumbnail or placeholder */}
+                <button
+                  type="button"
+                  className="shrink-0 h-14 w-14 rounded-lg border bg-muted overflow-hidden flex items-center justify-center"
+                  onClick={() => pkg.photo_url && setViewPhoto(pkg.photo_url)}
+                  disabled={!pkg.photo_url}
+                >
+                  {pkg.photo_url ? (
+                    <img src={pkg.photo_url} alt="Foto" className="h-full w-full object-cover" />
+                  ) : (
+                    <PackageOpen className="h-6 w-6 text-muted-foreground/50" />
+                  )}
+                </button>
                 <div className="flex-1 min-w-0 space-y-2">
                   {/* Row 1: Name + Status */}
                   <div className="flex items-center justify-between gap-2">
@@ -178,6 +192,8 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
           </Card>
         ))
       )}
+
+      <PhotoViewer url={viewPhoto} open={!!viewPhoto} onClose={() => setViewPhoto(null)} />
     </div>
   );
 }
