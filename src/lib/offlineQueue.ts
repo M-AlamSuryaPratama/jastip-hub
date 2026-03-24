@@ -37,11 +37,11 @@ export async function syncQueue() {
   for (const action of queue) {
     try {
       if (action.type === 'create') {
-        const { error } = await supabase.from('packages').insert(action.payload);
+        const { error } = await supabase.from('packages').insert(action.payload as any);
         if (error) throw error;
       } else if (action.type === 'update_status') {
         const { id, status } = action.payload as { id: string; status: string };
-        const { error } = await supabase.from('packages').update({ status }).eq('id', id);
+        const { error } = await supabase.from('packages').update({ status } as any).eq('id', id);
         if (error) throw error;
       } else if (action.type === 'delete') {
         const { error } = await supabase.from('packages').delete().eq('id', action.payload.id as string);
