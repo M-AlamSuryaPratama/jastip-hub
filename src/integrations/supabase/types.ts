@@ -14,7 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      packages: {
+        Row: {
+          created_at: string
+          customer_name: string
+          expedition_type: Database["public"]["Enums"]["expedition_type"]
+          fee_jastip: number
+          id: string
+          notes: string | null
+          status: Database["public"]["Enums"]["package_status"]
+          tracking_number: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          expedition_type: Database["public"]["Enums"]["expedition_type"]
+          fee_jastip?: number
+          id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["package_status"]
+          tracking_number: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          expedition_type?: Database["public"]["Enums"]["expedition_type"]
+          fee_jastip?: number
+          id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["package_status"]
+          tracking_number?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +55,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      expedition_type: "J&T" | "JNE" | "SPX" | "Sicepat" | "Makanan" | "Lainnya"
+      package_status: "Pending" | "Picked Up" | "Done"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +183,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      expedition_type: ["J&T", "JNE", "SPX", "Sicepat", "Makanan", "Lainnya"],
+      package_status: ["Pending", "Picked Up", "Done"],
+    },
   },
 } as const
