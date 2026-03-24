@@ -1,16 +1,30 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Package } from 'lucide-react';
+import { DashboardCards } from '@/components/DashboardCards';
+import { PackageForm } from '@/components/PackageForm';
+import { PackageList } from '@/components/PackageList';
+import { usePackages } from '@/hooks/usePackages';
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const Index = () => {
+  const { data: packages = [], isLoading } = usePackages();
+
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-primary text-primary-foreground px-4 py-3 shadow-elevated">
+        <div className="container max-w-lg mx-auto flex items-center gap-2">
+          <Package className="h-5 w-5" />
+          <h1 className="text-lg font-bold tracking-tight">Alam Jastip</h1>
+        </div>
+      </header>
+
+      {/* Content */}
+      <main className="container max-w-lg mx-auto px-4 py-4 space-y-4 pb-8">
+        <DashboardCards packages={packages} />
+        <PackageForm />
+        <PackageList packages={packages} isLoading={isLoading} />
+      </main>
     </div>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;
