@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["'Plus Jakarta Sans'", "system-ui", "sans-serif"],
+        sans: ["'Inter'", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -72,6 +72,7 @@ export default {
       boxShadow: {
         card: "var(--shadow-card)",
         elevated: "var(--shadow-elevated)",
+        "card-hover": "var(--shadow-card-hover)",
       },
       keyframes: {
         "accordion-down": {
