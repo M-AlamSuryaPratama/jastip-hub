@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Package, PackageStatus, ExpeditionType } from '@/lib/types';
 import { toast } from 'sonner';
 import { enqueue } from '@/lib/offlineQueue';
+import { uploadPhoto } from '@/lib/photoUpload';
 
 export function usePackages() {
   return useQuery({
@@ -30,10 +31,26 @@ export function useCreatePackage() {
       photo_url?: string;
     }) => {
       if (!navigator.onLine) {
+        // Store base64 photo in offline queue
         enqueue({ type: 'create', payload: pkg });
         return pkg;
       }
-      const { data, error } = await supabase.from('packages').insert(pkg).select().single();
+
+      // Upload photo to Storage if present
+      let photoUrl = pkg.photo_url;
+      if (photoUrl && photoUrl.startsWith('data:')) {
+        try {
+          photoUrl = await uploadPhoto(photoUrl);
+        } catch {
+          // Fall back to base64 if upload fails
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('packages')
+        .insert({ ...pkg, photo_url: photoUrl || null })
+        .select()
+        .single();
       if (error) throw error;
       return data;
     },

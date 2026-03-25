@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { uploadPhoto } from '@/lib/photoUpload';
 import { toast } from 'sonner';
 
 interface QueuedAction {
@@ -37,7 +38,18 @@ export async function syncQueue() {
   for (const action of queue) {
     try {
       if (action.type === 'create') {
-        const { error } = await supabase.from('packages').insert(action.payload as any);
+        const payload = { ...action.payload };
+
+        // Upload buffered base64 photo to Storage
+        if (typeof payload.photo_url === 'string' && (payload.photo_url as string).startsWith('data:')) {
+          try {
+            payload.photo_url = await uploadPhoto(payload.photo_url as string);
+          } catch {
+            // Keep base64 if upload fails
+          }
+        }
+
+        const { error } = await supabase.from('packages').insert(payload as any);
         if (error) throw error;
       } else if (action.type === 'update_status') {
         const { id, status } = action.payload as { id: string; status: string };
@@ -56,7 +68,7 @@ export async function syncQueue() {
 
   const synced = queue.length - failed.length;
   if (synced > 0) {
-    toast.success(`${synced} aksi offline berhasil disinkronkan!`);
+    toast.success(`Sinkronisasi berhasil! ${synced} aksi offline telah disimpan.`);
   }
   if (failed.length > 0) {
     toast.error(`${failed.length} aksi gagal disinkronkan, akan dicoba lagi.`);

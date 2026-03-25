@@ -1,6 +1,7 @@
 import { DashboardCards } from '@/components/DashboardCards';
 import { PackageForm } from '@/components/PackageForm';
 import { PackageList } from '@/components/PackageList';
+import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { usePackages } from '@/hooks/usePackages';
 import logoSrc from '/logo.png';
 
@@ -16,6 +17,9 @@ const Index = () => {
           <div>
             <h1 className="text-lg font-bold tracking-tight leading-tight">Alam Jastip</h1>
             <p className="text-[10px] font-medium opacity-80 leading-none">Last-Mile Management</p>
+          </div>
+          <div className="ml-auto">
+            <ConnectionStatus />
           </div>
         </div>
       </header>
