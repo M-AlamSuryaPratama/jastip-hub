@@ -10,7 +10,7 @@ import type { Package, PackageStatus, ExpeditionType } from '@/lib/types';
 import { EXPEDITION_COLORS, STATUS_COLORS, PACKAGE_STATUSES, EXPEDITION_TYPES } from '@/lib/types';
 
 interface PackageListProps {
-  packages: Package[];
+  packages: (Package & { _offline?: boolean })[];
   isLoading: boolean;
 }
 
