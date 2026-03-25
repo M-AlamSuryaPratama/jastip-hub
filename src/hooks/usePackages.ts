@@ -2,8 +2,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Package, PackageStatus, ExpeditionType } from '@/lib/types';
 import { toast } from 'sonner';
-import { enqueue } from '@/lib/offlineQueue';
+import { enqueue, savePackageOffline, getOfflinePackages } from '@/lib/offlineQueue';
 import { uploadPhoto } from '@/lib/photoUpload';
+import type { OfflinePackage } from '@/lib/offlineDb';
+
+export interface OfflinePackageDisplay extends Omit<Package, 'id'> {
+  id: string;
+  _offline: true;
+  _offlineId: number;
+}
 
 export function usePackages() {
   return useQuery({
@@ -19,6 +26,30 @@ export function usePackages() {
   });
 }
 
+/** Fetch offline packages from IndexedDB for display */
+export function useOfflinePackages() {
+  return useQuery({
+    queryKey: ['offline_packages'],
+    queryFn: async (): Promise<OfflinePackageDisplay[]> => {
+      const items = await getOfflinePackages();
+      return items.map((pkg: OfflinePackage) => ({
+        id: `offline-${pkg.id}`,
+        created_at: pkg.created_at,
+        customer_name: pkg.customer_name,
+        expedition_type: pkg.expedition_type as ExpeditionType,
+        tracking_number: pkg.tracking_number,
+        fee_jastip: pkg.fee_jastip,
+        status: 'Pending' as PackageStatus,
+        notes: pkg.notes,
+        photo_url: pkg.photo_base64,
+        _offline: true as const,
+        _offlineId: pkg.id!,
+      }));
+    },
+    refetchInterval: 2000, // Poll to keep in sync
+  });
+}
+
 export function useCreatePackage() {
   const qc = useQueryClient();
   return useMutation({
@@ -31,8 +62,14 @@ export function useCreatePackage() {
       photo_url?: string;
     }) => {
       if (!navigator.onLine) {
-        // Store base64 photo in offline queue
-        enqueue({ type: 'create', payload: pkg });
+        await savePackageOffline({
+          customer_name: pkg.customer_name,
+          expedition_type: pkg.expedition_type,
+          tracking_number: pkg.tracking_number,
+          fee_jastip: pkg.fee_jastip,
+          notes: pkg.notes,
+          photo_base64: pkg.photo_url, // base64 string
+        });
         return pkg;
       }
 
@@ -56,7 +93,12 @@ export function useCreatePackage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['packages'] });
-      toast.success(navigator.onLine ? 'Paket berhasil ditambahkan!' : 'Paket disimpan offline, akan disinkronkan otomatis.');
+      qc.invalidateQueries({ queryKey: ['offline_packages'] });
+      toast.success(
+        navigator.onLine
+          ? 'Paket berhasil ditambahkan!'
+          : 'Tersimpan di memori HP (Offline). Akan disinkronkan saat ada sinyal.'
+      );
     },
     onError: () => toast.error('Gagal menambahkan paket'),
   });
