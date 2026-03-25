@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, Search, PackageCheck, CheckCircle2, PackageOpen } from 'lucide-react';
+import { Trash2, Search, PackageCheck, CheckCircle2, PackageOpen, CloudOff } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import type { Package, PackageStatus, ExpeditionType } from '@/lib/types';
 import { EXPEDITION_COLORS, STATUS_COLORS, PACKAGE_STATUSES, EXPEDITION_TYPES } from '@/lib/types';
 
 interface PackageListProps {
-  packages: Package[];
+  packages: (Package & { _offline?: boolean })[];
   isLoading: boolean;
 }
 
@@ -127,9 +127,14 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
                 <div className="flex-1 min-w-0 space-y-2">
                   {/* Row 1: Name + Status */}
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold text-sm truncate">{pkg.customer_name}</p>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold text-primary-foreground ${STATUS_COLORS[pkg.status]}`}>
-                      {pkg.status}
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className="font-semibold text-sm truncate">{pkg.customer_name}</p>
+                      {(pkg as any)._offline && (
+                        <CloudOff className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                      )}
+                    </div>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold text-primary-foreground ${(pkg as any)._offline ? 'bg-amber-500' : STATUS_COLORS[pkg.status]}`}>
+                      {(pkg as any)._offline ? 'Offline' : pkg.status}
                     </span>
                   </div>
                   {/* Row 2: Expedition badge + tracking */}
@@ -149,6 +154,7 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
                     )}
                   </div>
                   {/* Row 4: Actions */}
+                  {!(pkg as any)._offline && (
                   <div className="flex items-center gap-2 pt-1">
                     {pkg.status === 'Pending' && (
                       <Button
@@ -186,6 +192,12 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
+                  )}
+                  {(pkg as any)._offline && (
+                    <p className="text-[10px] text-amber-600 flex items-center gap-1 pt-1">
+                      <CloudOff className="h-3 w-3" /> Menunggu koneksi untuk sinkronisasi
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>

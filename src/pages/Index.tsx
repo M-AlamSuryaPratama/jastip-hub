@@ -2,11 +2,16 @@ import { DashboardCards } from '@/components/DashboardCards';
 import { PackageForm } from '@/components/PackageForm';
 import { PackageList } from '@/components/PackageList';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
-import { usePackages } from '@/hooks/usePackages';
+import { usePackages, useOfflinePackages } from '@/hooks/usePackages';
+import type { Package } from '@/lib/types';
 import logoSrc from '/logo.png';
 
 const Index = () => {
   const { data: packages = [], isLoading } = usePackages();
+  const { data: offlinePackages = [] } = useOfflinePackages();
+
+  // Merge cloud + offline packages, offline first
+  const allPackages = [...offlinePackages, ...packages] as (Package & { _offline?: boolean })[];
 
   return (
     <div className="min-h-screen bg-background">
@@ -28,7 +33,7 @@ const Index = () => {
       <main className="container max-w-lg mx-auto px-4 py-5 space-y-5 pb-10">
         <DashboardCards packages={packages} />
         <PackageForm />
-        <PackageList packages={packages} isLoading={isLoading} />
+        <PackageList packages={allPackages} isLoading={isLoading} />
       </main>
     </div>
   );
