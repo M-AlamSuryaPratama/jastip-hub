@@ -130,7 +130,7 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
                     <div className="flex items-center gap-1.5 min-w-0">
                       <p className="font-semibold text-sm truncate">{pkg.customer_name}</p>
                       {(pkg as any)._offline && (
-                        <CloudOff className="h-3.5 w-3.5 shrink-0 text-amber-500" title="Tersimpan offline" />
+                        <CloudOff className="h-3.5 w-3.5 shrink-0 text-amber-500" />
                       )}
                     </div>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold text-primary-foreground ${(pkg as any)._offline ? 'bg-amber-500' : STATUS_COLORS[pkg.status]}`}>
