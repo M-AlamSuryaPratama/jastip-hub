@@ -1,6 +1,7 @@
 import { DashboardCards } from '@/components/DashboardCards';
 import { PackageForm } from '@/components/PackageForm';
 import { PackageList } from '@/components/PackageList';
+import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { usePackages } from '@/hooks/usePackages';
 import logoSrc from '/logo.png';
 
