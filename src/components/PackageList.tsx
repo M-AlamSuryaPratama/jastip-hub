@@ -154,6 +154,7 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
                     )}
                   </div>
                   {/* Row 4: Actions */}
+                  {!(pkg as any)._offline && (
                   <div className="flex items-center gap-2 pt-1">
                     {pkg.status === 'Pending' && (
                       <Button
@@ -191,6 +192,12 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
+                  )}
+                  {(pkg as any)._offline && (
+                    <p className="text-[10px] text-amber-600 flex items-center gap-1 pt-1">
+                      <CloudOff className="h-3 w-3" /> Menunggu koneksi untuk sinkronisasi
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
