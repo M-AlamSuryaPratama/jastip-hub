@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 interface QueuedAction {
   id: string;
-  type: 'update_status' | 'delete';
+  type: 'update_status' | 'delete' | 'update';
   payload: Record<string, unknown>;
   timestamp: number;
 }
@@ -101,6 +101,10 @@ export async function syncQueue() {
       if (action.type === 'update_status') {
         const { id, status } = action.payload as { id: string; status: string };
         const { error } = await supabase.from('packages').update({ status } as any).eq('id', id);
+        if (error) throw error;
+      } else if (action.type === 'update') {
+        const { id, ...updates } = action.payload as { id: string; [key: string]: unknown };
+        const { error } = await supabase.from('packages').update(updates as any).eq('id', id);
         if (error) throw error;
       } else if (action.type === 'delete') {
         const { error } = await supabase.from('packages').delete().eq('id', action.payload.id as string);

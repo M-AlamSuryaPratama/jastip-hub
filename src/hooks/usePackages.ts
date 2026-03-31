@@ -26,7 +26,6 @@ export function usePackages() {
   });
 }
 
-/** Fetch offline packages from IndexedDB for display */
 export function useOfflinePackages() {
   return useQuery({
     queryKey: ['offline_packages'],
@@ -46,7 +45,7 @@ export function useOfflinePackages() {
         _offlineId: pkg.id!,
       }));
     },
-    refetchInterval: 2000, // Poll to keep in sync
+    refetchInterval: 2000,
   });
 }
 
@@ -68,12 +67,11 @@ export function useCreatePackage() {
           tracking_number: pkg.tracking_number,
           fee_jastip: pkg.fee_jastip,
           notes: pkg.notes,
-          photo_base64: pkg.photo_url, // base64 string
+          photo_base64: pkg.photo_url,
         });
         return pkg;
       }
 
-      // Upload photo to Storage if present
       let photoUrl = pkg.photo_url;
       if (photoUrl && photoUrl.startsWith('data:')) {
         try {
@@ -120,6 +118,33 @@ export function useUpdatePackageStatus() {
       toast.success(navigator.onLine ? 'Status berhasil diupdate!' : 'Status disimpan offline, akan disinkronkan otomatis.');
     },
     onError: () => toast.error('Gagal update status'),
+  });
+}
+
+export function useUpdatePackage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (pkg: {
+      id: string;
+      customer_name: string;
+      expedition_type: ExpeditionType;
+      tracking_number: string;
+      fee_jastip: number;
+      notes: string | null;
+    }) => {
+      if (!navigator.onLine) {
+        enqueue({ type: 'update', payload: pkg });
+        return;
+      }
+      const { id, ...updates } = pkg;
+      const { error } = await supabase.from('packages').update(updates).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['packages'] });
+      toast.success(navigator.onLine ? 'Data berhasil diperbarui!' : 'Perubahan disimpan offline, akan disinkronkan otomatis.');
+    },
+    onError: () => toast.error('Gagal memperbarui data'),
   });
 }
 
