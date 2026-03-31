@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 interface QueuedAction {
   id: string;
-  type: 'update_status' | 'delete';
+  type: 'update_status' | 'delete' | 'update';
   payload: Record<string, unknown>;
   timestamp: number;
 }
