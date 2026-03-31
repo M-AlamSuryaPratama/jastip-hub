@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -10,6 +10,28 @@ import { EXPEDITION_COLORS } from '@/lib/types';
 
 interface ProfitCalendarProps {
   packages: Package[];
+}
+
+function exportCsv(packages: Package[], month: Date) {
+  const monthStart = startOfMonth(month);
+  const monthEnd = endOfMonth(month);
+  const filtered = packages.filter(p => {
+    const d = new Date(p.created_at);
+    return p.status === 'Done' && d >= monthStart && d <= monthEnd;
+  });
+
+  const header = 'Tanggal,Customer,Ekspedisi,Resi,Fee Jastip,Status\n';
+  const rows = filtered.map(p =>
+    `${format(new Date(p.created_at), 'yyyy-MM-dd')},${p.customer_name},${p.expedition_type},${p.tracking_number},${p.fee_jastip},${p.status}`
+  ).join('\n');
+
+  const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `profit-${format(month, 'yyyy-MM')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export function ProfitCalendar({ packages }: ProfitCalendarProps) {
@@ -30,7 +52,7 @@ export function ProfitCalendar({ packages }: ProfitCalendarProps) {
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-  const startPad = getDay(monthStart); // 0=Sun
+  const startPad = getDay(monthStart);
 
   const selectedPackages = selectedDate
     ? donePackages.filter(p => isSameDay(new Date(p.created_at), selectedDate))
@@ -54,9 +76,14 @@ export function ProfitCalendar({ packages }: ProfitCalendarProps) {
               <CalendarDays className="h-4 w-4 text-primary" />
               History Profit
             </CardTitle>
-            <p className="text-xs font-bold text-primary">
-              Total: Rp {totalMonth.toLocaleString('id-ID')}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-bold text-primary">
+                Rp {totalMonth.toLocaleString('id-ID')}
+              </p>
+              <Button variant="outline" size="sm" className="h-7 text-[10px] px-2" onClick={() => exportCsv(packages, currentMonth)}>
+                <Download className="h-3 w-3 mr-1" /> CSV
+              </Button>
+            </div>
           </div>
           <div className="flex items-center justify-between pt-1">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
@@ -69,13 +96,11 @@ export function ProfitCalendar({ packages }: ProfitCalendarProps) {
           </div>
         </CardHeader>
         <CardContent className="px-3 pb-3">
-          {/* Day headers */}
           <div className="grid grid-cols-7 gap-0.5 mb-1">
             {dayNames.map(d => (
               <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</div>
             ))}
           </div>
-          {/* Calendar grid */}
           <div className="grid grid-cols-7 gap-0.5">
             {Array.from({ length: startPad }).map((_, i) => <div key={`pad-${i}`} />)}
             {days.map(day => {
@@ -106,7 +131,6 @@ export function ProfitCalendar({ packages }: ProfitCalendarProps) {
         </CardContent>
       </Card>
 
-      {/* Date detail dialog */}
       <Dialog open={!!selectedDate} onOpenChange={() => setSelectedDate(null)}>
         <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>

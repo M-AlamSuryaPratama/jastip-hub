@@ -121,6 +121,25 @@ export function useUpdatePackageStatus() {
   });
 }
 
+export function useBulkUpdateStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[]; status: PackageStatus }) => {
+      if (!navigator.onLine) {
+        ids.forEach(id => enqueue({ type: 'update_status', payload: { id, status } }));
+        return;
+      }
+      const { error } = await supabase.from('packages').update({ status }).in('id', ids);
+      if (error) throw error;
+    },
+    onSuccess: (_, { ids }) => {
+      qc.invalidateQueries({ queryKey: ['packages'] });
+      toast.success(navigator.onLine ? `${ids.length} paket berhasil diupdate!` : `${ids.length} update disimpan offline.`);
+    },
+    onError: () => toast.error('Gagal bulk update status'),
+  });
+}
+
 export function useUpdatePackage() {
   const qc = useQueryClient();
   return useMutation({
