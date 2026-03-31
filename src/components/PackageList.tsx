@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Trash2, Search, PackageCheck, CheckCircle2, PackageOpen, CloudOff, Pencil } from 'lucide-react';
+import { Trash2, Search, PackageCheck, CheckCircle2, PackageOpen, CloudOff, Pencil, MessageCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useUpdatePackageStatus, useDeletePackage } from '@/hooks/usePackages';
+import { useUpdatePackageStatus, useDeletePackage, useBulkUpdateStatus } from '@/hooks/usePackages';
 import { PhotoViewer } from '@/components/PhotoViewer';
 import { PackageDetailModal } from '@/components/PackageDetailModal';
 import type { Package, PackageStatus, ExpeditionType } from '@/lib/types';
@@ -15,14 +16,21 @@ interface PackageListProps {
   isLoading: boolean;
 }
 
+function generateWhatsAppUrl(pkg: Package): string {
+  const msg = `Halo ${pkg.customer_name}, paket ${pkg.expedition_type} kamu dengan Resi ${pkg.tracking_number} sudah saya ${pkg.status === 'Done' ? 'selesaikan' : 'ambil'} ya! 📦 Lokasi: Pundu. ${pkg.status === 'Picked Up' ? 'Standby di rumah, segera meluncur!' : 'Paket sudah sampai!'} ${pkg.photo_url ? `Cek foto paket di sini: ${pkg.photo_url}` : ''}`.trim();
+  return `https://wa.me/?text=${encodeURIComponent(msg)}`;
+}
+
 export function PackageList({ packages, isLoading }: PackageListProps) {
   const [statusFilter, setStatusFilter] = useState<PackageStatus | 'All'>('All');
   const [expeditionFilter, setExpeditionFilter] = useState<ExpeditionType | 'All'>('All');
   const [search, setSearch] = useState('');
   const [viewPhoto, setViewPhoto] = useState<string | null>(null);
   const [detailPkg, setDetailPkg] = useState<Package | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const updateStatus = useUpdatePackageStatus();
   const deletePackage = useDeletePackage();
+  const bulkUpdate = useBulkUpdateStatus();
 
   const filtered = packages.filter(p => {
     if (statusFilter !== 'All' && p.status !== statusFilter) return false;
@@ -33,6 +41,24 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
     }
     return true;
   });
+
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const selectedPkgs = filtered.filter(p => selected.has(p.id) && !(p as any)._offline);
+  const canBulkPickUp = selectedPkgs.length > 0 && selectedPkgs.every(p => p.status === 'Pending');
+  const canBulkDone = selectedPkgs.length > 0 && selectedPkgs.every(p => p.status === 'Picked Up');
+  const hasSelection = selected.size > 0;
+
+  const handleBulk = (status: PackageStatus) => {
+    const ids = selectedPkgs.map(p => p.id);
+    bulkUpdate.mutate({ ids, status }, { onSuccess: () => setSelected(new Set()) });
+  };
 
   if (isLoading) {
     return (
@@ -47,7 +73,7 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pb-20">
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -84,9 +110,19 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
         </Card>
       ) : (
         filtered.map(pkg => (
-          <Card key={pkg.id} className="shadow-card hover:shadow-card-hover transition-shadow border animate-slide-up">
+          <Card key={pkg.id} className={`shadow-card hover:shadow-card-hover transition-shadow border animate-slide-up ${selected.has(pkg.id) ? 'ring-2 ring-primary' : ''}`}>
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
+                {/* Checkbox for non-offline, non-Done packages */}
+                {!(pkg as any)._offline && pkg.status !== 'Done' && (
+                  <div className="shrink-0 pt-1">
+                    <Checkbox
+                      checked={selected.has(pkg.id)}
+                      onCheckedChange={() => toggleSelect(pkg.id)}
+                      className="h-5 w-5"
+                    />
+                  </div>
+                )}
                 <button type="button" className="shrink-0 h-14 w-14 rounded-lg border bg-muted overflow-hidden flex items-center justify-center" onClick={() => pkg.photo_url && setViewPhoto(pkg.photo_url)} disabled={!pkg.photo_url}>
                   {pkg.photo_url ? (
                     <img src={pkg.photo_url} alt="Foto" className="h-full w-full object-cover" />
@@ -101,6 +137,12 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
                       {(pkg as any)._offline && <CloudOff className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
                     </div>
                     <div className="flex items-center gap-1">
+                      {/* WhatsApp button for Picked Up / Done */}
+                      {!(pkg as any)._offline && (pkg.status === 'Picked Up' || pkg.status === 'Done') && (
+                        <a href={generateWhatsAppUrl(pkg)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center h-7 w-7 rounded-md text-green-600 hover:bg-green-50 transition-colors">
+                          <MessageCircle className="h-3.5 w-3.5" />
+                        </a>
+                      )}
                       {!(pkg as any)._offline && (
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => setDetailPkg(pkg)}>
                           <Pencil className="h-3.5 w-3.5" />
@@ -151,6 +193,27 @@ export function PackageList({ packages, isLoading }: PackageListProps) {
             </CardContent>
           </Card>
         ))
+      )}
+
+      {/* Bulk Action Bar */}
+      {hasSelection && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t shadow-elevated p-3 flex items-center gap-2 justify-center animate-slide-up">
+          <span className="text-xs font-semibold text-muted-foreground mr-2">{selected.size} dipilih</span>
+          {canBulkPickUp && (
+            <Button size="lg" className="flex-1 max-w-[200px] h-12 text-sm font-bold bg-status-picked hover:bg-status-picked/90 text-primary-foreground" onClick={() => handleBulk('Picked Up')}>
+              <PackageCheck className="h-5 w-5 mr-2" /> Ambil Semua
+            </Button>
+          )}
+          {canBulkDone && (
+            <Button size="lg" className="flex-1 max-w-[200px] h-12 text-sm font-bold bg-status-done hover:bg-status-done/90 text-primary-foreground" onClick={() => handleBulk('Done')}>
+              <CheckCircle2 className="h-5 w-5 mr-2" /> Selesai Semua
+            </Button>
+          )}
+          {!canBulkPickUp && !canBulkDone && selected.size > 0 && (
+            <p className="text-xs text-muted-foreground">Pilih paket dengan status yang sama untuk bulk action</p>
+          )}
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setSelected(new Set())}>Batal</Button>
+        </div>
       )}
 
       <PhotoViewer url={viewPhoto} open={!!viewPhoto} onClose={() => setViewPhoto(null)} />
