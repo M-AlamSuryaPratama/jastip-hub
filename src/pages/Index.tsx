@@ -11,6 +11,7 @@ import logoSrc from '/logo.png';
 const Index = () => {
   const { data: packages = [], isLoading } = usePackages();
   const { data: offlinePackages = [] } = useOfflinePackages();
+  usePackagesRealtime();
   const [activeTab, setActiveTab] = useState<'packages' | 'profit'>('packages');
 
   const allPackages = [...offlinePackages, ...packages] as (Package & { _offline?: boolean })[];
