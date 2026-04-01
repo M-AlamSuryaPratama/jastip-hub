@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Package, PackageStatus, ExpeditionType } from '@/lib/types';
@@ -5,6 +6,24 @@ import { toast } from 'sonner';
 import { enqueue, savePackageOffline, getOfflinePackages } from '@/lib/offlineQueue';
 import { uploadPhoto } from '@/lib/photoUpload';
 import type { OfflinePackage } from '@/lib/offlineDb';
+
+/** Subscribe to realtime changes on packages table and auto-invalidate queries */
+export function usePackagesRealtime() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    const channel = supabase
+      .channel('packages-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'packages' },
+        () => {
+          qc.invalidateQueries({ queryKey: ['packages'] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
+}
 
 export interface OfflinePackageDisplay extends Omit<Package, 'id'> {
   id: string;
