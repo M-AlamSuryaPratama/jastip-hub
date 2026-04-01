@@ -4,13 +4,14 @@ import { PackageForm } from '@/components/PackageForm';
 import { PackageList } from '@/components/PackageList';
 import { ProfitCalendar } from '@/components/ProfitCalendar';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
-import { usePackages, useOfflinePackages } from '@/hooks/usePackages';
+import { usePackages, useOfflinePackages, usePackagesRealtime } from '@/hooks/usePackages';
 import type { Package } from '@/lib/types';
 import logoSrc from '/logo.png';
 
 const Index = () => {
   const { data: packages = [], isLoading } = usePackages();
   const { data: offlinePackages = [] } = useOfflinePackages();
+  usePackagesRealtime();
   const [activeTab, setActiveTab] = useState<'packages' | 'profit'>('packages');
 
   const allPackages = [...offlinePackages, ...packages] as (Package & { _offline?: boolean })[];

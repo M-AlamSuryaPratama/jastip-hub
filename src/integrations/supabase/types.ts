@@ -55,7 +55,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      insert_package_from_bot: {
+        Args: {
+          p_customer_name: string
+          p_expedition_type?: string
+          p_fee_jastip?: number
+          p_notes?: string
+          p_status?: string
+          p_tracking_number: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       expedition_type: "J&T" | "JNE" | "SPX" | "Sicepat" | "Makanan" | "Lainnya"
